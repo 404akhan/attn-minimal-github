@@ -15,7 +15,7 @@ def selu(x):
 
 class Attn(nn.Module):
 
-    def __init__(self):
+    def __init__(self, num_heads=2):
         super(Attn, self).__init__()
         self.lr = 0.0001
         self.batch_size = 16
@@ -31,7 +31,7 @@ class Attn(nn.Module):
         self.conv4 = nn.Conv2d(24, 24, 3, stride=2, padding=1)
         self.batchNorm4 = nn.BatchNorm2d(24)
 
-        self.num_heads = 2
+        self.num_heads = num_heads
         self.w1 = nn.ModuleList([nn.Linear(26, 256) for _ in range(self.num_heads)])
         self.w2 = nn.ModuleList([nn.Linear(256, 256) for _ in range(self.num_heads)])
         self.w3 = nn.ModuleList([nn.Linear(256, 1) for _ in range(self.num_heads)])
@@ -146,4 +146,4 @@ class Attn(nn.Module):
 
 
     def save_model(self, counter):
-        torch.save(self.state_dict(), 'model-torch-2heads/counter_{}.pth'.format(counter))
+        torch.save(self.state_dict(), 'model-torch-enduro-{}heads/counter_{}.pth'.format(self.num_heads, counter))
