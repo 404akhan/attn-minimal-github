@@ -35,7 +35,7 @@ def parse_args():
     parser.add_argument("--env", type=str, default='Enduro', help="name of the game")
     parser.add_argument("--model-dir", type=str, default='./model-atari-prior-duel-enduro-1', help="load model from this directory. ")
     parser.add_argument("--video", type=str, default=None, help="Path to mp4 file where the video of first episode will be recorded.")
-    boolean_flag(parser, "stochastic", default=True, help="whether or not to use stochastic actions according to models eps value")
+    boolean_flag(parser, "stochastic", default=False, help="whether or not to use stochastic actions according to models eps value")
     boolean_flag(parser, "dueling", default=True, help="whether or not to use dueling model")
 
     return parser.parse_args()
@@ -90,7 +90,7 @@ def play(env, act, stochastic, video_path):
 
 
 if __name__ == '__main__':
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.2)
     tf_config = tf.ConfigProto(
         inter_op_parallelism_threads=8,
         intra_op_parallelism_threads=8,

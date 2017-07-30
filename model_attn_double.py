@@ -22,7 +22,7 @@ class Attn(nn.Module):
         self.cuda_exist = torch.cuda.is_available()
         print('cuda exist', self.cuda_exist)
 
-        self.conv1 = nn.Conv2d(4, 24, 3, stride=2, padding=1)
+        self.conv1 = nn.Conv2d(1, 24, 3, stride=2, padding=1)
         self.batchNorm1 = nn.BatchNorm2d(24)
         self.conv2 = nn.Conv2d(24, 24, 3, stride=2, padding=1)
         self.batchNorm2 = nn.BatchNorm2d(24)
@@ -36,7 +36,8 @@ class Attn(nn.Module):
         self.w2 = nn.ModuleList([nn.Linear(256, 256) for _ in range(self.num_heads)])
         self.w3 = nn.ModuleList([nn.Linear(256, 1) for _ in range(self.num_heads)])
 
-        self.f_fc1 = nn.Linear(26 * self.num_heads, 256)
+        self.num_frames = 4
+        self.f_fc1 = nn.Linear(26 * self.num_heads * self.num_frames, 256)
         self.f_fc2 = nn.Linear(256, 256)
         self.f_fc3 = nn.Linear(256, 9)
         
@@ -52,7 +53,7 @@ class Attn(nn.Module):
             np_coord_tensor[:,i,:] = np.array(self.cvt_coord(i))
         self.coord_tensor.data.copy_(torch.from_numpy(np_coord_tensor))
 
-        print('num of heads', self.num_heads)
+        print('Enduro, timewise attention, num of heads {}, num of frames {}'.format(self.num_heads, self.num_frames))
 
 
     def cvt_coord(self, i):
@@ -60,41 +61,42 @@ class Attn(nn.Module):
 
 
     def forward(self, img):
-        """convolution"""
-        x = self.conv1(img)
-        x = F.relu(x)
-        x = self.batchNorm1(x)
-        x = self.conv2(x)
-        x = F.relu(x)
-        x = self.batchNorm2(x)
-        x = self.conv3(x)
-        x = F.relu(x)
-        x = self.batchNorm3(x)
-        x = self.conv4(x)
-        x = F.relu(x)
-        x = self.batchNorm4(x)
-        # x = (bsize x 24 x 6 x 6)
-        # bsize is 1 test, 64 train
-        """g"""
-        mb = x.size()[0]
-        n_channels = x.size()[1]
-        d = x.size()[2]
-
-        x_flat = x.view(mb,n_channels,d*d).permute(0,2,1) # bsize x 36 x 24
-        # add coordinates
-        x_flat = torch.cat([x_flat, self.coord_tensor[:mb]], dim=2) # bsize x 36 x 26
-
-        x_flat2 = x_flat.view(mb*d*d, 26)
-
         objs = []
-        for i in range(self.num_heads):
-            scores = self.w3[i](selu(self.w2[i](selu(self.w1[i](x_flat2))))) # bsize*36 x 1
-            scores = scores.squeeze(1).view(mb, d * d) # bsize x 36
+        for i in range(self.num_frames):
+            img_single = img[:, i:(i+1), :, :]
+            """convolution"""
+            x = self.conv1(img_single)
+            x = F.relu(x)
+            x = self.batchNorm1(x)
+            x = self.conv2(x)
+            x = F.relu(x)
+            x = self.batchNorm2(x)
+            x = self.conv3(x)
+            x = F.relu(x)
+            x = self.batchNorm3(x)
+            x = self.conv4(x)
+            x = F.relu(x)
+            x = self.batchNorm4(x)
+            # x = (bsize x 24 x 6 x 6)
+            # bsize is 1 test, 64 train
+            """g"""
+            mb = x.size()[0]
+            n_channels = x.size()[1]
+            d = x.size()[2]
 
-            probs = F.softmax(scores).unsqueeze(1) # bsize x 1 x 36
-            obj = torch.bmm(probs, x_flat).squeeze(1) # bsize x 26
+            x_flat = x.view(mb,n_channels,d*d).permute(0,2,1) # bsize x 36 x 24
+            # add coordinates
+            x_flat = torch.cat([x_flat, self.coord_tensor[:mb]], dim=2) # bsize x 36 x 26
+            x_flat2 = x_flat.view(mb*d*d, 26)
 
-            objs.append(obj)
+            for i in range(self.num_heads):
+                scores = self.w3[i](selu(self.w2[i](selu(self.w1[i](x_flat2))))) # bsize*36 x 1
+                scores = scores.squeeze(1).view(mb, d * d) # bsize x 36
+
+                probs = F.softmax(scores).unsqueeze(1) # bsize x 1 x 36
+                obj = torch.bmm(probs, x_flat).squeeze(1) # bsize x 26
+
+                objs.append(obj)
         concat = torch.cat(objs, dim=1)
 
         x_f = self.f_fc1(concat)
@@ -146,4 +148,4 @@ class Attn(nn.Module):
 
 
     def save_model(self, counter):
-        torch.save(self.state_dict(), 'model-torch-enduro-{}heads/counter_{}.pth'.format(self.num_heads, counter))
+        torch.save(self.state_dict(), 'model-torch-enduro-{}heads-timewise-{}frames/counter_{}.pth'.format(self.num_heads, self.num_frames ,counter))
