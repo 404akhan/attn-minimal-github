@@ -16,7 +16,7 @@ def selu(x):
 
 class Attn(nn.Module):
 
-    def __init__(self):
+    def __init__(self, num_heads=2):
         super(Attn, self).__init__()
         self.lr = 0.0001
         self.batch_size = 16
@@ -32,14 +32,14 @@ class Attn(nn.Module):
         self.conv4 = nn.Conv2d(24, 24, 3, stride=2, padding=1)
         self.batchNorm4 = nn.BatchNorm2d(24)
 
-        self.num_heads = 2
+        self.num_heads = num_heads
         self.w1 = nn.ModuleList([nn.Linear(26, 256) for _ in range(self.num_heads)])
         self.w2 = nn.ModuleList([nn.Linear(256, 256) for _ in range(self.num_heads)])
         self.w3 = nn.ModuleList([nn.Linear(256, 1) for _ in range(self.num_heads)])
 
         self.f_fc1 = nn.Linear(26 * self.num_heads, 256)
         self.f_fc2 = nn.Linear(256, 256)
-        self.f_fc3 = nn.Linear(256, 6)
+        self.f_fc3 = nn.Linear(256, 9)
         
         self.optimizer = optim.Adam(self.parameters(), lr=self.lr)
 
@@ -53,7 +53,7 @@ class Attn(nn.Module):
             np_coord_tensor[:,i,:] = np.array(self.cvt_coord(i))
         self.coord_tensor.data.copy_(torch.from_numpy(np_coord_tensor))
 
-        print('two heads')
+        print('enduro heads', self.num_heads)
         self.plot_num = 0
         self.total_plot = 100
 
@@ -124,7 +124,8 @@ class Attn(nn.Module):
         axx_arr[1, 1].imshow(prob_summ, cmap='gray')
         plt.tight_layout()
 
-        f.savefig('results/attention'+str(self.plot_num))
+        f.show() #('results-enduro-4heads/attention'+str(self.plot_num))
+        plt.pause(1)
         plt.close()
         ### end plotting
         

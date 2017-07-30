@@ -25,11 +25,11 @@ replay_memory = []
 replay_memory_size = 500 * 1000
 upd_init_size = 10 * 1000
 batch_size = 16
-attn_net = Attn()
+attn_net = Attn(num_heads=4)
 if attn_net.cuda_exist:
     attn_net.cuda()
 
-filename = 'model-torch-2heads/counter_1321000.pth'
+filename = 'model-torch-enduro-4heads/counter_7761000.pth'
 print('==> loading checkpoint {}'.format(filename))
 checkpoint = torch.load(filename, map_location=lambda storage, loc: storage)
 attn_net.load_state_dict(checkpoint)
@@ -41,8 +41,8 @@ if not os.path.exists('results'):
 def parse_args():
     parser = argparse.ArgumentParser("Run an already learned DQN model.")
     # Environment
-    parser.add_argument("--env", type=str, default='Pong', help="name of the game")
-    parser.add_argument("--model-dir", type=str, default='./model-atari-duel-pong-1', help="load model from this directory. ")
+    parser.add_argument("--env", type=str, default='Enduro', help="name of the game")
+    parser.add_argument("--model-dir", type=str, default='./model-atari-prior-duel-enduro-1', help="load model from this directory. ")
     parser.add_argument("--video", type=str, default=None, help="Path to mp4 file where the video of first episode will be recorded.")
     boolean_flag(parser, "stochastic", default=True, help="whether or not to use stochastic actions according to models eps value")
     boolean_flag(parser, "dueling", default=True, help="whether or not to use dueling model")
@@ -64,6 +64,10 @@ def play(env, act, stochastic, video_path):
     obs = env.reset()
 
     while True:
+        if counter_frame > 100:
+            env.unwrapped.render()
+            attn_net.visualize_(np.array(obs)[None])
+        
         counter_frame += 1
         action = act(np.array(obs)[None], stochastic=stochastic)[0]
 
@@ -71,15 +75,15 @@ def play(env, act, stochastic, video_path):
             replay_memory.pop(0)
         replay_memory.append(Transition(np.array(obs)))
 
-        if len(replay_memory) > batch_size and counter_frame > 100: # visualize
-            samples = random.sample(replay_memory, batch_size)
-            states_batch, = map(np.array, zip(*samples))
-            last_vis = attn_net.visualize_(states_batch)
-            if last_vis: break
+        # if len(replay_memory) > batch_size and counter_frame > 100: # visualize
+        #     samples = random.sample(replay_memory, batch_size)
+        #     states_batch, = map(np.array, zip(*samples))
+        #     last_vis = attn_net.visualize_(states_batch)
+        #     if last_vis: break
 
         obs, rew, done, info = env.step(action)
         reward_sum += rew
-        
+
         if done:
             counter_games += 1
             obs = env.reset()

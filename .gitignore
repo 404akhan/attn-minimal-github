@@ -2,3 +2,7 @@ __pycache__/
 model-atari-duel-pong-1/
 model-atari-prior-duel-enduro-1/
 results
+model-torch-enduro-2heads/
+model-torch-enduro-4heads/
+results-enduro-2heads/
+results-enduro-4heads/
