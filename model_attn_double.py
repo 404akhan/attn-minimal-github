@@ -36,7 +36,7 @@ class Attn(nn.Module):
         self.w2 = nn.ModuleList([nn.Linear(256, 256) for _ in range(self.num_heads)])
         self.w3 = nn.ModuleList([nn.Linear(256, 1) for _ in range(self.num_heads)])
 
-        self.num_frames = 4
+        self.num_frames = 2
         self.f_fc1 = nn.Linear(26 * self.num_heads * self.num_frames, 256)
         self.f_fc2 = nn.Linear(256, 256)
         self.f_fc3 = nn.Linear(256, 9)
@@ -148,4 +148,4 @@ class Attn(nn.Module):
 
 
     def save_model(self, counter):
-        torch.save(self.state_dict(), 'model-torch-enduro-{}heads-timewise-{}frames/counter_{}.pth'.format(self.num_heads, self.num_frames ,counter))
+        torch.save(self.state_dict(), 'model-torch-enduro-{}heads-timewise-{}frames/counter_{}.pth'.format(self.num_heads, self.num_frames, counter))

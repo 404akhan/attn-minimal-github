@@ -57,11 +57,13 @@ def play(env, act, stochastic, video_path):
     accuracy_arr = []
 
     while True:
+        obs_np = np.array(obs)
+        obs_np = obs_np[:, :, 2:4]
         action = act(np.array(obs)[None], stochastic=stochastic)[0]
 
         if len(replay_memory) == replay_memory_size: # pop
             replay_memory.pop(0)
-        replay_memory.append(Transition(np.array(obs), action))
+        replay_memory.append(Transition(obs_np, action))
 
         if len(replay_memory) > upd_init_size: # train
             counter += 1
@@ -76,7 +78,7 @@ def play(env, act, stochastic, video_path):
                 if counter % 1000 == 0: attn_net.save_model(counter)
 
         if attn_net_play: # play
-            action = attn_net.action_(np.array(obs))
+            action = attn_net.action_(obs_np)
         obs, rew, done, info = env.step(action)
         reward_sum += rew
         
